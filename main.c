@@ -9,7 +9,21 @@
 #define WHITE 0xffffffff
 #define BLACK 0x00000000
 
-/* shapes (objects) */
+#define RAY_STEP
+
+/* TODO -->  Get initial direction of the ray. 'atan2()' Compute end node using "analytical intersection testing" -- SEE CLAUDE CONVO
+ */
+struct RayNode {
+    double x;
+    double y;
+};
+
+/* DO I ACTUALLY NEED THIS??? */
+struct Ray {
+    struct RayNode ray[];
+};
+
+/* objects */
 struct Circle {
     double x;
     double y;
@@ -44,7 +58,6 @@ int main(void) {
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     );
 
-    SDL_Rect fillRect = {0, 0, WIN_WIDTH, WIN_HEIGHT}; /* background rect (same size as window) */
     struct Circle circle = {200, 200, 80}; /* circle to be drawn */
 
     SDL_Event event;
@@ -60,15 +73,16 @@ int main(void) {
                 circle.y = event.motion.y;
             }
         }
+        /* clearing the background */
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
         SDL_RenderClear(renderer);
 
+        /* drawing circle */
         FillCircle(renderer, circle, WHITE);
 
-        SDL_UpdateWindowSurface(window);
+        /* updating window with and renderer changes */
         SDL_RenderPresent(renderer);
     }
-
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
@@ -93,7 +107,7 @@ void FillCircle(SDL_Renderer *renderer, struct Circle circle, Uint32 color) {
     }
 }
 
-/* until function to convert between uint32 color and rgba values */
+/* util function to convert between uint32 color and rgba values */
 struct RGBA uint32_to_rgba(Uint32 uint32) {
     struct RGBA rgba = {
         (uint32 >> 24) & 0xff,
