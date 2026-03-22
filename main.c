@@ -7,6 +7,7 @@
 
 /* colors */
 #define WHITE 0xffffffff
+#define BLACK 0x00000000
 
 /* shapes (objects) */
 struct Circle {
@@ -15,8 +16,16 @@ struct Circle {
     double r;
 };
 
+struct RGBA {
+    Uint8 r;
+    Uint8 g;
+    Uint8 b;
+    Uint8 a;
+};
+
 /* prototypes */
-void FillCircle(SDL_Surface *surface, struct Circle circle, Uint32 color);
+void FillCircle(SDL_Renderer *renderer, struct Circle circle, Uint32 color);
+struct RGBA uint32_to_rgba(Uint32 uint32);
 
 /*---------------------------------------------------------------------------------------------------------*/
 int main(void) {
@@ -30,11 +39,13 @@ int main(void) {
         0
     );
 
-    SDL_Surface *surface = SDL_GetWindowSurface(window);
+    SDL_Renderer *renderer = SDL_CreateRenderer(
+        window, -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+    );
 
-    struct Circle circle = {200, 200, 80};
-    FillCircle(surface, circle, WHITE);
-    SDL_UpdateWindowSurface(window);
+    SDL_Rect fillRect = {0, 0, WIN_WIDTH, WIN_HEIGHT}; /* background rect (same size as window) */
+    struct Circle circle = {200, 200, 80}; /* circle to be drawn */
 
     SDL_Event event;
     int running = 1;
@@ -44,7 +55,18 @@ int main(void) {
             if (event.type == SDL_QUIT) { /* listening for a quit event (pressing the X button) */
                 running = 0;
             }
+            if (event.type == SDL_MOUSEMOTION) {
+                circle.x = event.motion.x;
+                circle.y = event.motion.y;
+            }
         }
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+        SDL_RenderClear(renderer);
+
+        FillCircle(renderer, circle, WHITE);
+
+        SDL_UpdateWindowSurface(window);
+        SDL_RenderPresent(renderer);
     }
 
     SDL_DestroyWindow(window);
@@ -54,18 +76,30 @@ int main(void) {
 /*---------------------------------------------------------------------------------------------------------*/
 
 /* Used to render a circle */
-void FillCircle(SDL_Surface *surface, struct Circle circle, Uint32 color) {
-    /* pre-compute radius squared to avoid doing square root for every
-    pixel to see the distance from the center.*/
+void FillCircle(SDL_Renderer *renderer, struct Circle circle, Uint32 color) {
+    /* pre-compute square of radius to avoid taking square root for every
+    pixel to get the distance from the circles center. */
     double radiusSquared = pow(circle.r, 2);
+    struct RGBA rgba = uint32_to_rgba(color);
     /* only looping over the square that encompasses the circle to avoid checking every pixel in the window */
     for (double x = circle.x - circle.r; x <= circle.x + circle.r; x++) {
         for (double y = circle.y- circle.r; y <= circle.y + circle.r; y++) {
             double distanceSquared = pow(x - circle.x, 2) + pow(y - circle.y, 2);
             if (distanceSquared < radiusSquared) {
-                SDL_Rect pixel = {x, y, 1, 1}; /* SDL_Rest uses ints to store their data. demoting our double (narrowing conversion) */
-                SDL_FillRect(surface, &pixel, WHITE);
+                SDL_SetRenderDrawColor(renderer, rgba.r, rgba.g, rgba.b, rgba.a);
+                SDL_RenderDrawPoint(renderer, (int)x, (int)y);
             }
         }
     }
+}
+
+/* until function to convert between uint32 color and rgba values */
+struct RGBA uint32_to_rgba(Uint32 uint32) {
+    struct RGBA rgba = {
+        (uint32 >> 24) & 0xff,
+        (uint32 >> 16) & 0xff,
+        (uint32 >> 8) & 0xff,
+        (uint32 >> 0) & 0xff
+    };
+    return rgba;
 }
