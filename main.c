@@ -8,19 +8,18 @@
 /* colors */
 #define WHITE 0xffffffff
 #define BLACK 0x00000000
-
-#define RAY_STEP
+#define YELLOW 0xffff0000
+#define NUM_RAYS 100
+#define TAU (M_PI * 2)
 
 /* TODO -->  Get initial direction of the ray. 'atan2()' Compute end node using "analytical intersection testing" -- SEE CLAUDE CONVO
  */
-struct RayNode {
-    double x;
-    double y;
-};
-
-/* DO I ACTUALLY NEED THIS??? */
 struct Ray {
-    struct RayNode ray[];
+    double x1;
+    double y1;
+    double angle;
+    double x2;
+    double y2;
 };
 
 /* objects */
@@ -40,6 +39,8 @@ struct RGBA {
 /* prototypes */
 void FillCircle(SDL_Renderer *renderer, struct Circle circle, Uint32 color);
 struct RGBA uint32_to_rgba(Uint32 uint32);
+void generateRays(struct Ray rays[], int numRays, struct Circle circle);
+void drawRays(struct Ray rays[], int numRays, SDL_Renderer *renderer, Uint32 uint32_color);
 
 /*---------------------------------------------------------------------------------------------------------*/
 int main(void) {
@@ -80,6 +81,11 @@ int main(void) {
         /* drawing circle */
         FillCircle(renderer, circle, WHITE);
 
+        /* DRAW RAYS */
+        struct Ray rays[NUM_RAYS];
+        generateRays(rays, NUM_RAYS, circle);
+        drawRays(rays, NUM_RAYS, renderer, YELLOW);
+
         /* updating window with and renderer changes */
         SDL_RenderPresent(renderer);
     }
@@ -116,4 +122,29 @@ struct RGBA uint32_to_rgba(Uint32 uint32) {
         (uint32 >> 0) & 0xff
     };
     return rgba;
+}
+
+/* util function to generate (x) number of rays */
+void generateRays(struct Ray rays[], int numRays, struct Circle circle) {
+    double rayLength = WIN_WIDTH + WIN_HEIGHT; /* arbitrarily long distance to ensure offscreenedness*/
+    for (int i = 0; i < numRays; i++) {
+        double angle = (TAU / numRays) * i;
+
+        rays[i].angle = angle;
+        /* starting the ray at the boundary of circle to avoid weird artifacting from overlapping rays*/
+        rays[i].x1 = circle.x + cos(angle) * circle.r;
+        rays[i].y1 = circle.y + -(sin(angle)) * circle.r;
+        /* calculating end point using raylength */
+        rays[i].x2 = circle.x + cos(angle) * rayLength;
+        rays[i].y2 = circle.y + -(sin(angle)) * rayLength;
+    }
+}
+
+void drawRays(struct Ray rays[], int numRays, SDL_Renderer *renderer, Uint32 uint32_color) {
+    struct RGBA color = uint32_to_rgba(uint32_color);
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    for (int i = 0; i < numRays; i++) {
+        SDL_RenderDrawLine(renderer, rays[i].x1, rays[i].y1, rays[i].x2, rays[i].y2);
+    }
 }
