@@ -3,4 +3,8 @@ project(sdl2 C)
 
 set(CMAKE_C_STANDARD 23)
 
-add_executable(sdl2 main.c)
+find_package(SDL2 REQUIRED)
+
+add_executable(app main.c)
+
+target_link_libraries(app SDL2::SDL2)
